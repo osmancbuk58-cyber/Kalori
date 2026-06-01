@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Pediatrik günlük kalori ve makro besin hesabı">
+<title>Kalori · Cep</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-elev: #161b22;
+    --bg-elev-2: #1c232c;
+    --border: #2a3038;
+    --text: #e6edf3;
+    --text-mute: #8b949e;
+    --text-dim: #6e7681;
+    --accent: #7ee2c1;
+    --accent-dim: #4d9b86;
+    --warn: #d4a574;
+    --crit: #e06c75;
+    --info: #79c0ff;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); background: var(--bg);
+    color: var(--text); line-height: 1.5;
+    min-height: 100vh; padding-bottom: env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    border-bottom: 1px solid var(--border); background: var(--bg);
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .header-inner { max-width: 880px; margin: 0 auto; padding: 12px 16px 12px; }
+  .brand {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px;
+  }
+  .brand-left { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark {
+    font-family: var(--mono); font-weight: 700; font-size: 17px;
+    color: var(--accent); letter-spacing: -0.02em;
+  }
+  .brand-mark::before { content: '▍'; margin-right: 6px; color: var(--accent); }
+  .brand-sub {
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .btn-reset {
+    background: none; border: 1px solid var(--border); color: var(--text-mute);
+    font-family: var(--mono); font-size: 11px; padding: 5px 10px;
+    border-radius: 5px; cursor: pointer; letter-spacing: 0.04em;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  .pt-bar {
+    background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .pt-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px; align-items: center;
+  }
+  @media (max-width: 540px) {
+    .pt-row { grid-template-columns: 1fr 1fr; }
+  }
+  .pt-field { display: flex; flex-direction: column; gap: 3px; }
+  .pt-field label {
+    font-family: var(--mono); font-size: 9.5px; color: var(--text-dim);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .pt-field input {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--accent); padding: 6px 9px; border-radius: 4px;
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    -webkit-appearance: none; appearance: none; width: 100%;
+  }
+  .pt-field input:focus { outline: none; border-color: var(--accent-dim); }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  .sex-toggle {
+    display: flex; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px; height: 100%;
+  }
+  .sex-btn {
+    flex: 1; background: none; border: none; color: var(--text-mute);
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    padding: 4px; cursor: pointer; border-radius: 3px;
+  }
+  .sex-btn.active {
+    background: var(--bg-elev-2); color: var(--accent);
+  }
+
+  main { max-width: 880px; margin: 0 auto; padding: 16px 16px 80px; }
+
+  .card {
+    background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  }
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; gap: 12px;
+  }
+  .card-title {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--text); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .card-tag {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .sub-head {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase;
+    margin: 14px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sub-head:first-child { margin-top: 0; }
+
+  /* Yöntem sonuç satırı */
+  .method-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .method-row:last-child { border-bottom: none; }
+  .method-name {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text); letter-spacing: 0.04em;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .method-name .meta {
+    display: block; font-size: 10px; color: var(--text-dim);
+    font-weight: 400; margin-top: 2px;
+    text-transform: none; letter-spacing: 0;
+  }
+  .method-val {
+    font-family: var(--mono); font-size: 18px; font-weight: 600;
+    color: var(--accent); white-space: nowrap; text-align: right;
+  }
+  .method-val .unit {
+    font-size: 11px; color: var(--text-dim); margin-left: 4px;
+    font-weight: 400;
+  }
+  .method-val .sub {
+    display: block; font-size: 11px; color: var(--text-mute);
+    font-weight: 400; margin-top: 2px;
+  }
+
+  /* Faktör seçici */
+  .factor-block {
+    margin-bottom: 12px;
+  }
+  .factor-label {
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-mute); letter-spacing: 0.04em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .factor-row {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .opt {
+    background: var(--bg-elev-2); border: 1px solid var(--border);
+    color: var(--text-mute); cursor: pointer;
+    padding: 8px 10px; border-radius: 5px;
+    font-family: var(--mono); font-size: 11.5px;
+    transition: all 0.15s; flex: 1; min-width: 80px;
+    text-align: center;
+  }
+  .opt:hover { border-color: var(--accent); color: var(--accent); }
+  .opt.active {
+    background: var(--accent); color: var(--bg);
+    border-color: var(--accent); font-weight: 600;
+  }
+  .opt .factor-val { display: block; font-size: 10px; opacity: 0.7; margin-top: 2px; }
+  .opt .factor-desc { display: block; font-size: 9.5px; opacity: 0.7; margin-top: 2px; font-weight: 400; }
+
+  .result-box {
+    background: var(--bg-elev-2); border: 1px solid var(--accent-dim);
+    border-radius: 8px; padding: 12px 14px;
+    margin-top: 14px;
+  }
+  .result-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 5px 0;
+  }
+  .result-lbl {
+    font-family: var(--mono); font-size: 11px; color: var(--text-mute);
+    letter-spacing: 0.04em;
+  }
+  .result-val {
+    font-family: var(--mono); font-size: 16px; font-weight: 600;
+    color: var(--accent);
+  }
+  .result-val.big {
+    font-size: 22px;
+  }
+
+  .note {
+    font-size: 12.5px; color: var(--text-mute);
+    line-height: 1.6; margin: 8px 0;
+  }
+  .note strong { color: var(--text); }
+  .note .num { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+
+  .small-note {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-dim);
+    margin-top: 8px; line-height: 1.5;
+  }
+
+  .alert {
+    padding: 10px 12px; border-radius: 6px;
+    font-size: 12.5px; line-height: 1.55;
+    margin: 10px 0;
+  }
+  .alert.info { background: rgba(121, 192, 255, 0.08); border-left: 3px solid var(--info); color: var(--info); }
+  .alert.warn { background: rgba(212, 165, 116, 0.08); border-left: 3px solid var(--warn); color: var(--warn); }
+  .alert strong { color: var(--text); }
+
+  .input-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .input-row {
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .input-row label {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-mute);
+    letter-spacing: 0.04em;
+  }
+  .input-row input {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 10px; border-radius: 5px;
+    font-family: var(--mono); font-size: 14px;
+    -webkit-appearance: none; appearance: none; width: 100%;
+  }
+  .input-row input:focus { outline: none; border-color: var(--accent-dim); }
+
+  .macro-row {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 10px; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .macro-row:last-child { border-bottom: none; }
+  .macro-name {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text); letter-spacing: 0.04em;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .macro-name .meta {
+    display: block; font-size: 10px; color: var(--text-dim);
+    font-weight: 400; margin-top: 2px; text-transform: none; letter-spacing: 0;
+  }
+  .macro-amount {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--accent); text-align: right; min-width: 80px;
+  }
+  .macro-amount .sub {
+    display: block; font-size: 10px; color: var(--text-dim);
+    font-weight: 400; margin-top: 1px;
+  }
+  .macro-pct {
+    font-family: var(--mono); font-size: 11px; color: var(--text-mute);
+    min-width: 50px; text-align: right;
+  }
+
+  .empty-state {
+    text-align: center; padding: 16px;
+    background: rgba(212, 165, 116, 0.08);
+    border: 1px dashed rgba(212, 165, 116, 0.3);
+    border-radius: 8px; color: var(--warn);
+    font-family: var(--mono); font-size: 12px;
+  }
+
+  .foot {
+    text-align: center; padding: 24px 16px;
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-dim); letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-left">
+        <span class="brand-mark">kalori · cep</span>
+        <span class="brand-sub">pediatri</span>
+      </div>
+      <button class="btn-reset" onclick="resetAll()">Sıfırla</button>
+    </div>
+
+    <div class="pt-bar">
+      <div class="pt-row">
+        <div class="pt-field">
+          <label>Cinsiyet</label>
+          <div class="sex-toggle" id="seg-sex">
+            <button class="sex-btn active" data-sex="e">E</button>
+            <button class="sex-btn" data-sex="k">K</button>
+          </div>
+        </div>
+        <div class="pt-field">
+          <label>Yaş (yıl)</label>
+          <input type="number" id="age" step="any" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="pt-field">
+          <label>Kilo (kg)</label>
+          <input type="number" id="kg" step="any" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="pt-field">
+          <label>Boy (cm) <span style="color:var(--text-dim); font-weight:400;">ops</span></label>
+          <input type="number" id="height" step="any" inputmode="decimal" placeholder="—">
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ========== 1. BAZAL KALORİ ========== -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Bazal Kalori İhtiyacı</div>
+      <span class="card-tag">3 yöntem</span>
+    </div>
+
+    <div id="bazal-empty" class="empty-state">Yaş + cinsiyet + kilo gir.</div>
+    <div id="bazal-results" style="display:none;">
+
+      <div class="method-row">
+        <div class="method-name">
+          Holliday-Segar
+          <span class="meta">Kiloya göre · 100/50/20 kuralı</span>
+        </div>
+        <div class="method-val" id="hs-val">—
+          <span class="sub" id="hs-perkg">—</span>
+        </div>
+      </div>
+
+      <div class="method-row">
+        <div class="method-name">
+          Yaşa göre tablo
+          <span class="meta">Cinsiyete göre standart</span>
+        </div>
+        <div class="method-val" id="age-val">—
+          <span class="sub" id="age-perkg">—</span>
+        </div>
+      </div>
+
+      <div class="method-row">
+        <div class="method-name">
+          Schofield BMR
+          <span class="meta">Bazal metabolik hız (1985)</span>
+        </div>
+        <div class="method-val" id="bmr-val">—
+          <span class="sub">aktivite/stres faktörü ile çarpılır</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="small-note">
+      <strong>Hangisi?</strong> Holliday-Segar pratik (Hacettepe defterindeki standart). Yaşa göre tablo sağlıklı çocuk için. Schofield BMR yatan/hasta için, aktivite ve stres faktörü ile çarpılarak kullanılır.
+    </div>
+  </div>
+
+  <!-- ========== 2. AKTİVİTE + STRES ========== -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Düzeltilmiş Kalori</div>
+      <span class="card-tag">BMR × aktivite × stres</span>
+    </div>
+
+    <div class="factor-block">
+      <div class="factor-label">Aktivite Faktörü</div>
+      <div class="factor-row" data-q="act">
+        <button class="opt active" data-val="1.2">
+          Yatağa bağlı
+          <span class="factor-val">×1.2</span>
+        </button>
+        <button class="opt" data-val="1.3">
+          Hafif
+          <span class="factor-val">×1.3</span>
+        </button>
+        <button class="opt" data-val="1.5">
+          Normal
+          <span class="factor-val">×1.5</span>
+        </button>
+        <button class="opt" data-val="1.7">
+          Yüksek
+          <span class="factor-val">×1.7</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="factor-block">
+      <div class="factor-label">Stres Faktörü</div>
+      <div class="factor-row" data-q="stress">
+        <button class="opt active" data-val="1.0">
+          Yok
+          <span class="factor-val">×1.0</span>
+        </button>
+        <button class="opt" data-val="1.2">
+          Hafif
+          <span class="factor-desc">küçük op, basit enf.</span>
+          <span class="factor-val">×1.2</span>
+        </button>
+        <button class="opt" data-val="1.4">
+          Orta
+          <span class="factor-desc">sepsis, büyük cerrahi</span>
+          <span class="factor-val">×1.4</span>
+        </button>
+        <button class="opt" data-val="1.7">
+          Ağır
+          <span class="factor-desc">ağır yanık, ARDS</span>
+          <span class="factor-val">×1.7</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="result-box" id="adjusted-box" style="display:none;">
+      <div class="result-row">
+        <span class="result-lbl">Düzeltilmiş kalori</span>
+        <span class="result-val big" id="adjusted-val">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-lbl">Kalori/kg</span>
+        <span class="result-val" id="adjusted-perkg">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-lbl">Hesap</span>
+        <span class="result-val" id="adjusted-formula" style="font-size: 12px;">—</span>
+      </div>
+    </div>
+
+    <div class="alert info" style="margin-top:14px;">
+      <strong>Klinik referans:</strong> Sepsis %30-50 artış, büyük cerrahi %20-30, ağır yanık (&gt;%40 VYA) %50-100, ARDS/multipl travma %50-80, fokal enfeksiyon %10-20.
+    </div>
+  </div>
+
+  <!-- ========== 3. YAKALAMA BÜYÜMESİ ========== -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Yakalama Büyümesi (Catch-up)</div>
+      <span class="card-tag">Malnütrisyon</span>
+    </div>
+
+    <div class="note">
+      Malnütrisyonlu çocukta normal kaloriden fazlası gerekir. <strong>İdeal kilo</strong> = yaşa göre 50. persentil kilo. Catch-up kalori = (RDA × ideal kilo) / mevcut kilo.
+    </div>
+
+    <div class="input-row" style="margin-top:12px; max-width: 200px;">
+      <label>İdeal kilo (kg)</label>
+      <input type="number" id="ideal-kg" step="any" inputmode="decimal" placeholder="yaşa göre 50p">
+    </div>
+
+    <div class="result-box" id="catchup-box" style="display:none;">
+      <div class="result-row">
+        <span class="result-lbl">Mevcut/ideal oran</span>
+        <span class="result-val" id="catchup-ratio">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-lbl">Catch-up kalori/kg</span>
+        <span class="result-val" id="catchup-perkg">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-lbl">Toplam catch-up kalori</span>
+        <span class="result-val big" id="catchup-total">—</span>
+      </div>
+    </div>
+
+    <div class="small-note">
+      <strong>Malnütrisyon dereceleri:</strong> Hafif %80-90, orta %70-80, ağır &lt;%70 (Waterlow). Catch-up kalori ihtiyacı ağır malnütrisyonda 150-200 kcal/kg'a çıkabilir. Refeeding sendromu riski — yavaş başla, P/K/Mg/tiamin takip.
+    </div>
+  </div>
+
+  <!-- ========== 4. MAKRO BESİN DAĞILIMI ========== -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Makro Besin Dağılımı</div>
+      <span class="card-tag">Günlük</span>
+    </div>
+
+    <div class="note">Düzeltilmiş kaloriden hesaplanan günlük protein, karbonhidrat, yağ ihtiyacı.</div>
+
+    <div id="macro-empty" class="empty-state" style="margin-top:10px;">Düzeltilmiş kalori hesaplandığında çıkar.</div>
+
+    <div id="macro-results" style="display:none; margin-top:14px;">
+
+      <div class="macro-row">
+        <div class="macro-name">
+          Protein
+          <span class="meta" id="protein-meta">—</span>
+        </div>
+        <div class="macro-amount" id="protein-amount">—
+          <span class="sub" id="protein-kcal">—</span>
+        </div>
+        <div class="macro-pct" id="protein-pct">—</div>
+      </div>
+
+      <div class="macro-row">
+        <div class="macro-name">
+          Karbonhidrat
+          <span class="meta">%45-65 toplam kalori</span>
+        </div>
+        <div class="macro-amount" id="cho-amount">—
+          <span class="sub" id="cho-kcal">—</span>
+        </div>
+        <div class="macro-pct" id="cho-pct">—</div>
+      </div>
+
+      <div class="macro-row">
+        <div class="macro-name">
+          Yağ
+          <span class="meta" id="fat-meta">—</span>
+        </div>
+        <div class="macro-amount" id="fat-amount">—
+          <span class="sub" id="fat-kcal">—</span>
+        </div>
+        <div class="macro-pct" id="fat-pct">—</div>
+      </div>
+
+    </div>
+
+    <div class="small-note" style="margin-top:14px;">
+      <strong>Protein artış:</strong> sağlıklı 0.85-1.5 g/kg/gün (yaşa göre) · hafif hastalık 1.5-2 · YBÜ/sepsis 2-3 · yanık &gt;%30 → 3+ g/kg/gün. Klinik bağlama göre arttır.
+    </div>
+  </div>
+
+  <div class="foot">kalori · cep · v0.1 · pediatri</div>
+
+</main>
+
+<script>
+/* ============================================================
+   KALORİ · CEP
+   ============================================================ */
+
+let sex = 'e';
+let actFactor = 1.2;
+let stressFactor = 1.0;
+
+const $ = id => document.getElementById(id);
+
+function fmt(n, d) {
+  if (!isFinite(n) || n === null) return '—';
+  if (d !== undefined) return n.toFixed(d);
+  if (Math.abs(n) >= 100) return n.toFixed(0);
+  if (Math.abs(n) >= 10) return n.toFixed(1);
+  return n.toFixed(2);
+}
+
+document.querySelectorAll('#seg-sex .sex-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#seg-sex .sex-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    sex = b.dataset.sex;
+    computeAll();
+  });
+});
+
+document.querySelectorAll('[data-q="act"] .opt').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-q="act"] .opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    actFactor = parseFloat(b.dataset.val);
+    computeAdjusted();
+  });
+});
+
+document.querySelectorAll('[data-q="stress"] .opt').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-q="stress"] .opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    stressFactor = parseFloat(b.dataset.val);
+    computeAdjusted();
+  });
+});
+
+['age', 'kg', 'height', 'ideal-kg'].forEach(id => {
+  $(id).addEventListener('input', computeAll);
+});
+
+/* ============================================================
+   HOLLIDAY-SEGAR KALORİ
+   ============================================================ */
+function hollidaySegarKcal(kg) {
+  if (kg <= 10) return 100 * kg;
+  if (kg <= 20) return 1000 + 50 * (kg - 10);
+  return 1500 + 20 * (kg - 20);
+}
+
+/* ============================================================
+   YAŞA GÖRE TABLO (Hacettepe defteri, kcal/gün)
+   ============================================================ */
+const AGE_KCAL_TABLE = {
+  // age: [erkek, kız]
+  2: [1250, 1250], 3: [1350, 1250], 4: [1500, 1350], 5: [1650, 1450],
+  6: [1800, 1600], 7: [1850, 1800], 8: [2050, 1900], 9: [2100, 2000],
+  10: [2300, 2050], 11: [2400, 2150], 12: [2450, 2250], 13: [2600, 2250],
+  14: [2750, 2200], 15: [2950, 2000], 16: [3050, 1800], 17: [3000, 1600], 18: [3000, 1500]
+};
+
+function ageKcal(age, sex) {
+  if (age < 2) return null; // tablo 2 yaştan başlıyor, küçükler için Holliday-Segar daha uygun
+  if (age >= 18) return AGE_KCAL_TABLE[18][sex === 'e' ? 0 : 1];
+  const lo = Math.floor(age);
+  const hi = Math.ceil(age);
+  if (lo === hi) return AGE_KCAL_TABLE[lo][sex === 'e' ? 0 : 1];
+  if (!AGE_KCAL_TABLE[lo] || !AGE_KCAL_TABLE[hi]) return null;
+  const t = age - lo;
+  const idx = sex === 'e' ? 0 : 1;
+  return AGE_KCAL_TABLE[lo][idx] + t * (AGE_KCAL_TABLE[hi][idx] - AGE_KCAL_TABLE[lo][idx]);
+}
+
+/* ============================================================
+   SCHOFIELD BMR (1985, basitleştirilmiş kilo bazlı)
+   ============================================================ */
+function schofieldBMR(age, sex, kg) {
+  // Erkek
+  if (sex === 'e') {
+    if (age < 3) return 59.5 * kg - 30;
+    if (age < 10) return 22.7 * kg + 505;
+    if (age < 18) return 17.7 * kg + 658;
+    return 15.1 * kg + 692; // 18+ adolesan/erişkin
+  }
+  // Kız
+  if (age < 3) return 58.3 * kg - 31;
+  if (age < 10) return 20.3 * kg + 486;
+  if (age < 18) return 13.4 * kg + 692;
+  return 14.8 * kg + 487;
+}
+
+/* ============================================================
+   PROTEIN İHTİYACI (yaşa göre, g/kg/gün)
+   Sağlıklı çocuk, WHO/IOM
+   ============================================================ */
+function proteinPerKg(age) {
+  if (age < 0.5) return 1.52;
+  if (age < 1) return 1.2;
+  if (age < 4) return 1.05;
+  if (age < 14) return 0.95;
+  return 0.85;
+}
+
+function proteinDescription(age) {
+  if (age < 1) return '1.2-1.5 g/kg (infant)';
+  if (age < 4) return '1.05 g/kg (1-3 yaş)';
+  if (age < 14) return '0.95 g/kg (4-13 yaş)';
+  return '0.85 g/kg (14+ yaş)';
+}
+
+/* ============================================================
+   YAĞ ORANI (yaşa göre, % toplam kalori)
+   ============================================================ */
+function fatPercentage(age) {
+  if (age < 1) return { lo: 30, hi: 40 };
+  if (age < 4) return { lo: 30, hi: 40 };
+  return { lo: 25, hi: 35 };
+}
+
+function fatDescription(age) {
+  if (age < 4) return '%30-40 (0-3 yaş)';
+  return '%25-35 (4+ yaş)';
+}
+
+/* ============================================================
+   HESAPLAMA
+   ============================================================ */
+function computeAll() {
+  const age = parseFloat($('age').value);
+  const kg = parseFloat($('kg').value);
+
+  if (!isFinite(age) || age < 0 || !isFinite(kg) || kg <= 0) {
+    $('bazal-empty').style.display = 'block';
+    $('bazal-results').style.display = 'none';
+    $('adjusted-box').style.display = 'none';
+    $('macro-empty').style.display = 'block';
+    $('macro-results').style.display = 'none';
+    $('catchup-box').style.display = 'none';
+    return;
+  }
+
+  $('bazal-empty').style.display = 'none';
+  $('bazal-results').style.display = 'block';
+
+  // Holliday-Segar
+  const hs = hollidaySegarKcal(kg);
+  $('hs-val').innerHTML = `${fmt(hs, 0)}<span class="unit">kcal/gün</span><span class="sub">${fmt(hs / kg, 1)} kcal/kg</span>`;
+
+  // Yaşa göre tablo
+  const ageK = ageKcal(age, sex);
+  if (ageK === null) {
+    $('age-val').innerHTML = `<span style="color:var(--text-dim); font-size:12px;">2 yaş altı için tablo yok — Holliday-Segar kullan</span>`;
+  } else {
+    $('age-val').innerHTML = `${fmt(ageK, 0)}<span class="unit">kcal/gün</span><span class="sub">${fmt(ageK / kg, 1)} kcal/kg</span>`;
+  }
+
+  // Schofield BMR
+  const bmr = schofieldBMR(age, sex, kg);
+  $('bmr-val').innerHTML = `${fmt(bmr, 0)}<span class="unit">kcal/gün</span><span class="sub">aktivite/stres faktörü ile çarpılır</span>`;
+
+  computeAdjusted();
+  computeCatchup();
+}
+
+function computeAdjusted() {
+  const age = parseFloat($('age').value);
+  const kg = parseFloat($('kg').value);
+  if (!isFinite(age) || age < 0 || !isFinite(kg) || kg <= 0) {
+    $('adjusted-box').style.display = 'none';
+    return;
+  }
+
+  const bmr = schofieldBMR(age, sex, kg);
+  const adjusted = bmr * actFactor * stressFactor;
+  $('adjusted-box').style.display = 'block';
+  $('adjusted-val').innerHTML = `${fmt(adjusted, 0)} <span class="unit" style="font-size:12px;">kcal/gün</span>`;
+  $('adjusted-perkg').textContent = `${fmt(adjusted / kg, 1)} kcal/kg/gün`;
+  $('adjusted-formula').textContent = `${fmt(bmr, 0)} × ${actFactor.toFixed(1)} × ${stressFactor.toFixed(1)}`;
+
+  computeMacros(adjusted);
+}
+
+function computeMacros(totalKcal) {
+  const age = parseFloat($('age').value);
+  const kg = parseFloat($('kg').value);
+  if (!isFinite(age) || age < 0 || !isFinite(kg) || kg <= 0 || !isFinite(totalKcal)) {
+    $('macro-empty').style.display = 'block';
+    $('macro-results').style.display = 'none';
+    return;
+  }
+
+  $('macro-empty').style.display = 'none';
+  $('macro-results').style.display = 'block';
+
+  // Protein
+  const proteinPerKgVal = proteinPerKg(age);
+  const proteinG = proteinPerKgVal * kg;
+  const proteinKcal = proteinG * 4; // 1g protein = 4 kcal
+  const proteinPctVal = (proteinKcal / totalKcal) * 100;
+  $('protein-meta').textContent = proteinDescription(age) + ' (sağlıklı çocuk)';
+  $('protein-amount').innerHTML = `${fmt(proteinG, 1)} g <span class="sub">${fmt(proteinKcal, 0)} kcal</span>`;
+  $('protein-pct').textContent = `%${fmt(proteinPctVal, 1)}`;
+
+  // Yağ — orta nokta
+  const fatPct = fatPercentage(age);
+  const fatPctMid = (fatPct.lo + fatPct.hi) / 2;
+  const fatKcal = totalKcal * (fatPctMid / 100);
+  const fatG = fatKcal / 9; // 1g yağ = 9 kcal
+  $('fat-meta').textContent = fatDescription(age);
+  $('fat-amount').innerHTML = `${fmt(fatG, 1)} g <span class="sub">${fmt(fatKcal, 0)} kcal</span>`;
+  $('fat-pct').textContent = `%${fmt(fatPct.lo, 0)}-${fmt(fatPct.hi, 0)}`;
+
+  // Karbonhidrat — kalan
+  const choKcal = totalKcal - proteinKcal - fatKcal;
+  const choG = choKcal / 4; // 1g cho = 4 kcal
+  const choPctVal = (choKcal / totalKcal) * 100;
+  $('cho-amount').innerHTML = `${fmt(choG, 1)} g <span class="sub">${fmt(choKcal, 0)} kcal</span>`;
+  $('cho-pct').textContent = `%${fmt(choPctVal, 1)}`;
+}
+
+function computeCatchup() {
+  const age = parseFloat($('age').value);
+  const kg = parseFloat($('kg').value);
+  const idealKg = parseFloat($('ideal-kg').value);
+  if (!isFinite(age) || age < 0 || !isFinite(kg) || kg <= 0 || !isFinite(idealKg) || idealKg <= 0) {
+    $('catchup-box').style.display = 'none';
+    return;
+  }
+
+  const ratio = (kg / idealKg) * 100;
+  // RDA kcal/kg (yaşa göre kabaca)
+  const rdaPerKg = hollidaySegarKcal(idealKg) / idealKg;
+  const catchupPerKg = (rdaPerKg * idealKg) / kg;
+  const catchupTotal = catchupPerKg * kg;
+
+  $('catchup-box').style.display = 'block';
+  $('catchup-ratio').innerHTML = `%${fmt(ratio, 1)} <span style="font-size:11px; color:var(--text-dim);">(${malnutritionGrade(ratio)})</span>`;
+  $('catchup-perkg').textContent = `${fmt(catchupPerKg, 1)} kcal/kg/gün`;
+  $('catchup-total').innerHTML = `${fmt(catchupTotal, 0)} <span class="unit" style="font-size:12px;">kcal/gün</span>`;
+}
+
+function malnutritionGrade(ratio) {
+  if (ratio >= 90) return 'normal';
+  if (ratio >= 80) return 'hafif malnütrisyon';
+  if (ratio >= 70) return 'orta malnütrisyon';
+  return 'ağır malnütrisyon';
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetAll() {
+  ['age', 'kg', 'height', 'ideal-kg'].forEach(id => $(id).value = '');
+  // Aktivite ve stres faktörünü defaulta döndür
+  document.querySelectorAll('[data-q="act"] .opt').forEach((b, i) => {
+    if (i === 0) b.classList.add('active'); else b.classList.remove('active');
+  });
+  document.querySelectorAll('[data-q="stress"] .opt').forEach((b, i) => {
+    if (i === 0) b.classList.add('active'); else b.classList.remove('active');
+  });
+  actFactor = 1.2;
+  stressFactor = 1.0;
+  computeAll();
+}
+
+computeAll();
+</script>
+
+</body>
+</html>
