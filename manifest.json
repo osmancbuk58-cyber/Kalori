@@ -1,7 +1,7 @@
 {
   "name": "Kalori · Cep",
   "short_name": "Kalori",
-  "description": "Pediatrik günlük kalori ve makro besin hesaplayıcı",
+  "description": "Pediatrik enerji, protein, sıvı hedefi ve Türkiye mamalarıyla beslenme planı",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
